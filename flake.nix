@@ -3,29 +3,32 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.05";
+    flake-utils.url = "github:numtide/flake-utils";
   };
   nixConfig = {
     bash-prompt = ''\[\033[1;32m\][\[\e]0;\u@\h: \w\a\]dev-shell:\w]\$\[\033[0m\] '';
   };
 
-  outputs = { self, nixpkgs }: 
-  let system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-      inshellisense = pkgs.callPackage ./inshellisense.nix {};
-  in {
+  outputs = { self, nixpkgs, flake-utils }: 
+    flake-utils.lib.eachDefaultSystem
+      (system:
+      let pkgs = nixpkgs.legacyPackages.${system};
+          inshellisense = pkgs.callPackage ./inshellisense.nix {};
+      in {
+        packages.default = inshellisense;
 
-    devShells.x86_64-linux.default = pkgs.mkShell {
-      buildInputs = with pkgs; [
-        inshellisense
-      ];
-      src = [
-        ./flake.nix
-        ./flake.lock
-        ./inshellisense.nix
-      ];
-      shellHook = ''
-        inshellisense --shell bash
-      '';
-    };
-  };
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            inshellisense
+          ];
+          src = [
+            ./flake.nix
+            ./flake.lock
+            ./inshellisense.nix
+          ];
+          shellHook = ''
+            inshellisense --shell bash
+          '';
+        };
+      });
 }
